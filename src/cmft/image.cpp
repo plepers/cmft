@@ -3975,11 +3975,11 @@ namespace cmft
             {
                 formatDefined = true;
             }
-            else if (1 == sscanf_s(buf, "GAMMA=%g", &hdrHeader.m_gamma, len))
+            else if (1 == sscanf(buf, "GAMMA=%g", &hdrHeader.m_gamma))
             {
                 hdrHeader.m_valid |= HDR_VALID_GAMMA;
             }
-            else if (1 == sscanf_s(buf, "EXPOSURE=%g", &hdrHeader.m_exposure, len))
+            else if (1 == sscanf(buf, "EXPOSURE=%g", &hdrHeader.m_exposure))
             {
                 hdrHeader.m_valid |= HDR_VALID_EXPOSURE;
             }
@@ -3995,7 +3995,7 @@ namespace cmft
         int32_t height;
         char buf[64];
         readLine(buf, sizeof(buf), _reader);
-        sscanf_s(buf, "-Y %d +X %d", &height, &width, sizeof(buf));
+        sscanf(buf, "-Y %d +X %d", &height, &width);
 
         // Allocate data.
         const uint32_t dataSize = width * height * 4 /* bytesPerChannel */;
