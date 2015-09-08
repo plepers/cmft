@@ -231,7 +231,7 @@ namespace cmft
         _vec[1] = cosf(theta);
         _vec[2] = -sinf(theta)*cosf(phi);
     }
-
+    
     // Assume normalized _vec.
     // Output is on [0, 1] for each component
     static inline void octantFromVec(float& _u, float& _v, const float _vec[3])
@@ -240,7 +240,7 @@ namespace cmft
         float dot = fabsf(_vec[0]) + fabsf(_vec[1]) + fabsf(_vec[2]);
         float px = _vec[0] / dot;
         float py = _vec[2] / dot;
-
+        
         // Reflect the folds of the lower hemisphere over the diagonals.
         if (_vec[1] <= 0.0f)
         {
@@ -252,18 +252,18 @@ namespace cmft
             _u = px;
             _v = py;
         }
-
+        
         _u = _u * 0.5f + 0.5f;
-        _v = _v * 0.5f + 0.5f;
+        _v = _v * 0.5f + 0.5f;        // Project the sphere onto the octahedron, and then onto the xy plane.
     }
-
+    
     static inline void vecFromOctant(float _vec[3], float _u, float _v)
     {
         _u = _u*2.0f - 1.0f;
         _v = _v*2.0f - 1.0f;
-
+        
         _vec[1] = 1.0f - fabsf(_u) - fabsf(_v);
-
+        
         if (_vec[1] < 0.0f)
         {
             _vec[0] = (1.0f - fabsf(_v)) * fsign(_u);
@@ -274,12 +274,67 @@ namespace cmft
             _vec[0] = _u;
             _vec[2] = _v;
         }
-
+        
         const float invLen = 1.0f/vec3Length(_vec);
         _vec[0] *= invLen;
         _vec[1] *= invLen;
         _vec[2] *= invLen;
     }
+    
+    
+    // Assume normalized _vec.
+    // Output is on [0, 1] for each component
+    static inline void splitOctantFromVec(float& _u, float& _v, const float _vec[3])
+    {
+        // Project the sphere onto the octahedron, and then onto the xy plane.
+        float dot = fabsf(_vec[0]) + fabsf(_vec[1]) + fabsf(_vec[2]);
+        float px = _vec[0] / dot;
+        float py = _vec[2] / dot;
+        
+        // rotate 45° and scale by 1/SQRT2/2
+        _u = px + py;
+        _v = px - py;
+        
+        // Reflect the folds of the lower hemisphere over the diagonals.
+        if (_vec[1] <= 0.0f)
+        {
+            _u += 2.0f;
+        }
+        
+        _u = _u * 0.25f + .25f;
+        _v = _v * 0.5f + 0.5f;
+    }
+    
+    static inline void vecFromSplitOctant(float _vec[3], float _u, float _v)
+    {
+        float px = _u*4.0f - 1.0f;
+        float py = _v*2.0f - 1.0f;
+        
+        float sign;
+        if( px > 1.0f ){
+            px -= 2.0f;
+            sign = 1.0f;
+        }else{
+            sign = -1.0f;
+        }
+        
+        
+        _vec[0] = ( sign * px - py ) / 2.0f;
+        _vec[2] = ( sign * px + py ) / 2.0f;
+        
+        
+        _vec[1] = 1.0f - fabsf(_vec[0]) - fabsf(_vec[2]);
+        
+        _vec[1] *= sign;
+        
+        
+        const float invLen = 1.0f/vec3Length(_vec);
+        _vec[0] *= invLen;
+        _vec[1] *= invLen;
+        _vec[2] *= invLen;
+    }
+    
+    
 
     /// http://www.mpia-hd.mpg.de/~mathar/public/mathar20051002.pdf
     /// http://www.rorydriscoll.com/2012/01/15/cubemap-texel-solid-angle/

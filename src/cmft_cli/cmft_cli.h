@@ -120,6 +120,7 @@ static const CliOptionMap s_validOutputTypes[] =
     { "vstrip",   OutputType::VStrip   },
     { "facelist", OutputType::FaceList },
     { "octant",   OutputType::Octant   },
+    { "octsplit", OutputType::OctSplit },
     CLI_OPTION_MAP_TERMINATOR,
 };
 

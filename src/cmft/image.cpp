@@ -92,6 +92,8 @@ namespace cmft
         "HStrip",
         "VStrip",
         "FaceList",
+        "octahedral",
+        "split_octahedral",
     };
 
     const char* getOutputTypeStr(OutputType::Enum _outputType)
@@ -133,6 +135,7 @@ namespace cmft
         OutputType::VStrip,
         OutputType::FaceList,
         OutputType::Octant,
+        OutputType::OctSplit,
         OutputType::Null,
     };
 
@@ -146,6 +149,7 @@ namespace cmft
         OutputType::VStrip,
         OutputType::FaceList,
         OutputType::Octant,
+        OutputType::OctSplit,
         OutputType::Null,
     };
 
@@ -158,6 +162,7 @@ namespace cmft
         OutputType::VStrip,
         OutputType::FaceList,
         OutputType::Octant,
+        OutputType::OctSplit,
         OutputType::Null,
     };
 
@@ -170,6 +175,7 @@ namespace cmft
         OutputType::VStrip,
         OutputType::FaceList,
         OutputType::Octant,
+        OutputType::OctSplit,
         OutputType::Null,
     };
 
@@ -3655,11 +3661,11 @@ namespace cmft
         {
             return false;
         }
-
+        
         // Conversion is done in rgba32f format.
         ImageSoftRef imageRgba32f;
         imageRefOrConvert(imageRgba32f, TextureFormat::RGBA32F, _src, _allocator);
-
+        
         // Alloc data.
         const uint32_t bytesPerPixel = 4 /*numChannels*/ * 4 /*bytesPerChannel*/;
         const uint32_t dstSize = imageRgba32f.m_height*2;
@@ -3673,24 +3679,24 @@ namespace cmft
         }
         void* dstData = BX_ALLOC(_allocator, dstDataSize);
         MALLOC_CHECK(dstData);
-
+        
         // Get source image parameters.
         uint32_t srcOffsets[CUBE_FACE_NUM][MAX_MIP_NUM];
         imageGetMipOffsets(srcOffsets, imageRgba32f);
-
+        
         // Iterate over destination image (latlong).
         for (uint8_t mip = 0; mip < imageRgba32f.m_numMips; ++mip)
         {
             const uint32_t dstMipSize  = dm::max(UINT32_C(1), dstSize  >> mip);
             const uint32_t dstMipPitch = dstMipSize * bytesPerPixel;
             const float invDstSizef  = 1.0f/float(dstMipSize-1);
-
+            
             const uint32_t srcMipSize = dm::max(UINT32_C(1), imageRgba32f.m_width >> mip);
             const uint32_t srcPitch = srcMipSize * bytesPerPixel;
-
+            
             const uint32_t srcMipSizeMinOne  = srcMipSize-1;
             const float    srcMipSizeMinOnef = dm::utof(srcMipSizeMinOne);
-
+            
             uint8_t* dstMipData = (uint8_t*)dstData + dstMipOffsets[mip];
             for (uint32_t yy = 0; yy < dstMipSize; ++yy)
             {
@@ -3698,25 +3704,25 @@ namespace cmft
                 for (uint32_t xx = 0; xx < dstMipSize; ++xx)
                 {
                     float* dstColumnData = (float*)((uint8_t*)dstRowData + xx*bytesPerPixel);
-
+                    
                     // Latlong (x,y).
                     const float xDst = dm::utof(xx)*invDstSizef;
                     const float yDst = dm::utof(yy)*invDstSizef;
-
+                    
                     // Get cubemap vector (x,y,z) coresponding to latlong (x,y).
                     float vec[3];
                     vecFromOctant(vec, xDst, yDst);
-
+                    
                     // Get cubemap (u,v,faceIdx) from cubemap vector (x,y,z).
                     float xSrcf;
                     float ySrcf;
                     uint8_t faceIdx;
                     vecToTexelCoord(xSrcf, ySrcf, faceIdx, vec);
-
+                    
                     // Convert from [0..1] to [0..(size-1)] range.
                     xSrcf *= srcMipSizeMinOnef;
                     ySrcf *= srcMipSizeMinOnef;
-
+                    
                     // Sample from cubemap (u,v, faceIdx).
                     if (_useBilinearInterpolation)
                     {
@@ -3724,18 +3730,18 @@ namespace cmft
                         const uint32_t y0 = dm::ftou(ySrcf);
                         const uint32_t x1 = dm::min(x0+1, srcMipSizeMinOne);
                         const uint32_t y1 = dm::min(y0+1, srcMipSizeMinOne);
-
+                        
                         const uint8_t* srcFaceData = (const uint8_t*)imageRgba32f.m_data + srcOffsets[faceIdx][mip];
                         const float *src0 = (const float*)((const uint8_t*)srcFaceData + y0*srcPitch + x0*bytesPerPixel);
                         const float *src1 = (const float*)((const uint8_t*)srcFaceData + y0*srcPitch + x1*bytesPerPixel);
                         const float *src2 = (const float*)((const uint8_t*)srcFaceData + y1*srcPitch + x0*bytesPerPixel);
                         const float *src3 = (const float*)((const uint8_t*)srcFaceData + y1*srcPitch + x1*bytesPerPixel);
-
+                        
                         const float tx = xSrcf - float(int32_t(x0));
                         const float ty = ySrcf - float(int32_t(y0));
                         const float invTx = 1.0f - tx;
                         const float invTy = 1.0f - ty;
-
+                        
                         float p0[3];
                         float p1[3];
                         float p2[3];
@@ -3744,11 +3750,11 @@ namespace cmft
                         vec3Mul(p1, src1,    tx*invTy);
                         vec3Mul(p2, src2, invTx*   ty);
                         vec3Mul(p3, src3,    tx*   ty);
-
+                        
                         const float rr = p0[0] + p1[0] + p2[0] + p3[0];
                         const float gg = p0[1] + p1[1] + p2[1] + p3[1];
                         const float bb = p0[2] + p1[2] + p2[2] + p3[2];
-
+                        
                         dstColumnData[0] = rr;
                         dstColumnData[1] = gg;
                         dstColumnData[2] = bb;
@@ -3758,10 +3764,10 @@ namespace cmft
                     {
                         const uint32_t xSrc = dm::ftou(xSrcf);
                         const uint32_t ySrc = dm::ftou(ySrcf);
-
+                        
                         const uint8_t* srcFaceData = (const uint8_t*)imageRgba32f.m_data + srcOffsets[faceIdx][mip];
                         const float *src = (const float*)((const uint8_t*)srcFaceData + ySrc*srcPitch + xSrc*bytesPerPixel);
-
+                        
                         dstColumnData[0] = src[0];
                         dstColumnData[1] = src[1];
                         dstColumnData[2] = src[2];
@@ -3770,7 +3776,7 @@ namespace cmft
                 }
             }
         }
-
+        
         // Fill image structure.
         Image result;
         result.m_width = dstSize;
@@ -3780,7 +3786,7 @@ namespace cmft
         result.m_numMips = imageRgba32f.m_numMips;
         result.m_numFaces = 1;
         result.m_data = dstData;
-
+        
         // Convert back to source format.
         if (TextureFormat::RGBA32F == _src.m_format)
         {
@@ -3791,14 +3797,15 @@ namespace cmft
             imageConvert(_dst, (TextureFormat::Enum)_src.m_format, result, _allocator);
             imageUnload(result, _allocator);
         }
-
+        
         // Cleanup.
         imageUnload(imageRgba32f, _allocator);
-
+        
         return true;
-
-
+        
+        
     }
+
 
     bool imageCubemapFromOctant(Image& _dst, const Image& _src, bool _useBilinearInterpolation, bx::AllocatorI* _allocator)
     {
@@ -3945,6 +3952,164 @@ namespace cmft
 
         return false;
     }
+    
+    
+    bool imageOctSplitFromCubemap(Image& _dst, const Image& _src, bool _useBilinearInterpolation, bx::AllocatorI* _allocator)
+    {
+        // Input check.
+        if (!imageIsCubemap(_src))
+        {
+            return false;
+        }
+        
+        // Conversion is done in rgba32f format.
+        ImageSoftRef imageRgba32f;
+        imageRefOrConvert(imageRgba32f, TextureFormat::RGBA32F, _src, _allocator);
+        
+        // Alloc data.
+        const uint32_t bytesPerPixel = 4 /*numChannels*/ * 4 /*bytesPerChannel*/;
+        const uint32_t dstHeight = imageRgba32f.m_height*2;
+        const uint32_t dstWidth = imageRgba32f.m_height*4;
+        uint32_t dstDataSize = 0;
+        uint32_t dstMipOffsets[MAX_MIP_NUM];
+        for (uint8_t mip = 0; mip < imageRgba32f.m_numMips; ++mip)
+        {
+            dstMipOffsets[mip] = dstDataSize;
+            const uint32_t dstMipWidth  = dm::max(UINT32_C(1), dstWidth  >> mip);
+            const uint32_t dstMipHeight = dm::max(UINT32_C(1), dstHeight >> mip);
+            dstDataSize += dstMipWidth * dstMipHeight * bytesPerPixel;
+        }
+        void* dstData = BX_ALLOC(_allocator, dstDataSize);
+        MALLOC_CHECK(dstData);
+        
+        // Get source image parameters.
+        uint32_t srcOffsets[CUBE_FACE_NUM][MAX_MIP_NUM];
+        imageGetMipOffsets(srcOffsets, imageRgba32f);
+        
+        // Iterate over destination image (latlong).
+        for (uint8_t mip = 0; mip < imageRgba32f.m_numMips; ++mip)
+        {
+            const uint32_t dstMipWidth  = dm::max(UINT32_C(1), dstWidth  >> mip);
+            const uint32_t dstMipHeight = dm::max(UINT32_C(1), dstHeight >> mip);
+            const uint32_t dstMipPitch = dstMipWidth * bytesPerPixel;
+            const float invDstWidthf  = 1.0f/float(dstMipWidth-1);
+            const float invDstHeightf = 1.0f/float(dstMipHeight-1);
+            
+            const uint32_t srcMipSize = dm::max(UINT32_C(1), imageRgba32f.m_width >> mip);
+            const uint32_t srcPitch = srcMipSize * bytesPerPixel;
+            
+            const uint32_t srcMipSizeMinOne  = srcMipSize-1;
+            const float    srcMipSizeMinOnef = dm::utof(srcMipSizeMinOne);
+            
+            uint8_t* dstMipData = (uint8_t*)dstData + dstMipOffsets[mip];
+            for (uint32_t yy = 0; yy < dstMipHeight; ++yy)
+            {
+                uint8_t* dstRowData = (uint8_t*)dstMipData + yy*dstMipPitch;
+                for (uint32_t xx = 0; xx < dstMipWidth; ++xx)
+                {
+                    float* dstColumnData = (float*)((uint8_t*)dstRowData + xx*bytesPerPixel);
+                    
+                    // Latlong (x,y).
+                    const float xDst = dm::utof(xx)*invDstWidthf;
+                    const float yDst = dm::utof(yy)*invDstHeightf;
+                    
+                    // Get cubemap vector (x,y,z) coresponding to latlong (x,y).
+                    float vec[3];
+                    vecFromSplitOctant(vec, xDst, yDst);
+                    
+                    // Get cubemap (u,v,faceIdx) from cubemap vector (x,y,z).
+                    float xSrcf;
+                    float ySrcf;
+                    uint8_t faceIdx;
+                    vecToTexelCoord(xSrcf, ySrcf, faceIdx, vec);
+                    
+                    // Convert from [0..1] to [0..(size-1)] range.
+                    xSrcf *= srcMipSizeMinOnef;
+                    ySrcf *= srcMipSizeMinOnef;
+                    
+                    // Sample from cubemap (u,v, faceIdx).
+                    if (_useBilinearInterpolation)
+                    {
+                        const uint32_t x0 = dm::ftou(xSrcf);
+                        const uint32_t y0 = dm::ftou(ySrcf);
+                        const uint32_t x1 = dm::min(x0+1, srcMipSizeMinOne);
+                        const uint32_t y1 = dm::min(y0+1, srcMipSizeMinOne);
+                        
+                        const uint8_t* srcFaceData = (const uint8_t*)imageRgba32f.m_data + srcOffsets[faceIdx][mip];
+                        const float *src0 = (const float*)((const uint8_t*)srcFaceData + y0*srcPitch + x0*bytesPerPixel);
+                        const float *src1 = (const float*)((const uint8_t*)srcFaceData + y0*srcPitch + x1*bytesPerPixel);
+                        const float *src2 = (const float*)((const uint8_t*)srcFaceData + y1*srcPitch + x0*bytesPerPixel);
+                        const float *src3 = (const float*)((const uint8_t*)srcFaceData + y1*srcPitch + x1*bytesPerPixel);
+                        
+                        const float tx = xSrcf - float(int32_t(x0));
+                        const float ty = ySrcf - float(int32_t(y0));
+                        const float invTx = 1.0f - tx;
+                        const float invTy = 1.0f - ty;
+                        
+                        float p0[3];
+                        float p1[3];
+                        float p2[3];
+                        float p3[3];
+                        vec3Mul(p0, src0, invTx*invTy);
+                        vec3Mul(p1, src1,    tx*invTy);
+                        vec3Mul(p2, src2, invTx*   ty);
+                        vec3Mul(p3, src3,    tx*   ty);
+                        
+                        const float rr = p0[0] + p1[0] + p2[0] + p3[0];
+                        const float gg = p0[1] + p1[1] + p2[1] + p3[1];
+                        const float bb = p0[2] + p1[2] + p2[2] + p3[2];
+                        
+                        dstColumnData[0] = rr;
+                        dstColumnData[1] = gg;
+                        dstColumnData[2] = bb;
+                        dstColumnData[3] = 1.0f;
+                    }
+                    else
+                    {
+                        const uint32_t xSrc = dm::ftou(xSrcf);
+                        const uint32_t ySrc = dm::ftou(ySrcf);
+                        
+                        const uint8_t* srcFaceData = (const uint8_t*)imageRgba32f.m_data + srcOffsets[faceIdx][mip];
+                        const float *src = (const float*)((const uint8_t*)srcFaceData + ySrc*srcPitch + xSrc*bytesPerPixel);
+                        
+                        dstColumnData[0] = src[0];
+                        dstColumnData[1] = src[1];
+                        dstColumnData[2] = src[2];
+                        dstColumnData[3] = 1.0f;
+                    }
+                }
+            }
+        }
+        
+        // Fill image structure.
+        Image result;
+        result.m_width = dstWidth;
+        result.m_height = dstHeight;
+        result.m_dataSize = dstDataSize;
+        result.m_format = TextureFormat::RGBA32F;
+        result.m_numMips = imageRgba32f.m_numMips;
+        result.m_numFaces = 1;
+        result.m_data = dstData;
+        
+        // Convert back to source format.
+        if (TextureFormat::RGBA32F == _src.m_format)
+        {
+            imageMove(_dst, result, _allocator);
+        }
+        else
+        {
+            imageConvert(_dst, (TextureFormat::Enum)_src.m_format, result, _allocator);
+            imageUnload(result, _allocator);
+        }
+        
+        // Cleanup.
+        imageUnload(imageRgba32f, _allocator);
+        
+        return true;
+    }
+    
+
+    
 
     // Image loading.
     //-----
@@ -5320,6 +5485,10 @@ namespace cmft
             else if (OutputType::Octant == _ot)
             {
                 imageOctantFromCubemap(outputImage, _image, true, _allocator);
+            }
+            else if (OutputType::OctSplit == _ot)
+            {
+                imageOctSplitFromCubemap(outputImage, _image, true, _allocator);
             }
             else
             {

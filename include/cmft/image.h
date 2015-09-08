@@ -66,7 +66,8 @@ namespace cmft
             VStrip,
             FaceList,
             Octant,
-
+			OctSplit,
+            
             Count,
             Null = -1,
         };
@@ -349,6 +350,9 @@ namespace cmft
 
     ///
     bool imageCubemapFromOctant(Image& _image, bool _useBilinearInterpolation = true, bx::AllocatorI* _allocator = g_allocator);
+    
+    ///
+    bool imageOctSplitFromCubemap(Image& _dst, const Image& _src, bool _useBilinearInterpolation, bx::AllocatorI* _allocator);
 
     ///
     bool imageLoad(Image& _image, const char* _filePath, TextureFormat::Enum _convertTo = TextureFormat::Null, bx::AllocatorI* _allocator = g_allocator);
