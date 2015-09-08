@@ -292,16 +292,16 @@ namespace cmft
         float py = _vec[2] / dot;
         
         // rotate 45° and scale by 1/SQRT2/2
-        _u = px + py;
+        _u = (px + py) - 1.0f;
         _v = px - py;
         
         // Reflect the folds of the lower hemisphere over the diagonals.
         if (_vec[1] <= 0.0f)
         {
-            _u += 2.0f;
+            _u = -_u;
         }
         
-        _u = _u * 0.25f + .25f;
+        _u = _u * 0.25f + 0.5f;
         _v = _v * 0.5f + 0.5f;
     }
     
@@ -313,14 +313,14 @@ namespace cmft
         float sign;
         if( px > 1.0f ){
             px -= 2.0f;
-            sign = 1.0f;
-        }else{
             sign = -1.0f;
+        }else{
+            sign = 1.0f;
         }
         
         
-        _vec[0] = ( sign * px - py ) / 2.0f;
-        _vec[2] = ( sign * px + py ) / 2.0f;
+        _vec[0] = ( sign * px + py ) / 2.0f;
+        _vec[2] = ( sign * px - py ) / 2.0f;
         
         
         _vec[1] = 1.0f - fabsf(_vec[0]) - fabsf(_vec[2]);

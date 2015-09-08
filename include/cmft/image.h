@@ -284,6 +284,9 @@ namespace cmft
 
     ///
     bool imageIsOctant(const Image& _image);
+    
+    ///
+    bool imageIsOctantSplit(const Image& _image);
 
     ///
     bool imageValidCubemapFaceList(const Image _faceList[6]);
@@ -353,6 +356,15 @@ namespace cmft
     
     ///
     bool imageOctSplitFromCubemap(Image& _dst, const Image& _src, bool _useBilinearInterpolation, bx::AllocatorI* _allocator);
+    
+    ///
+    bool imageOctSplitFromCubemap(Image& _cubemap, bool _useBilinearInterpolation, bx::AllocatorI* _allocator);
+    
+    ///
+    bool imageCubemapFromOctSplit(Image& _dst, const Image& _src, bool _useBilinearInterpolation = true, bx::AllocatorI* _allocator = g_allocator);
+    
+    ///
+    bool imageCubemapFromOctSplit(Image& _image, bool _useBilinearInterpolation = true, bx::AllocatorI* _allocator = g_allocator);
 
     ///
     bool imageLoad(Image& _image, const char* _filePath, TextureFormat::Enum _convertTo = TextureFormat::Null, bx::AllocatorI* _allocator = g_allocator);

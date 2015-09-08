@@ -929,10 +929,15 @@ int cmftMain(int _argc, char const* const* _argv)
             INFO("Converting cube cross to cubemap.");
             imageCubemapFromCross(image);
         }
-        else if (imageIsLatLong(image))
+//        else if (imageIsLatLong(image))
+//        {
+//            INFO("Converting latlong image to cubemap.");
+//            imageCubemapFromLatLong(image);
+//        }
+        else if (imageIsOctantSplit(image))
         {
-            INFO("Converting latlong image to cubemap.");
-            imageCubemapFromLatLong(image);
+            INFO("Converting oct split image to cubemap.");
+            imageCubemapFromOctSplit(image);
         }
         else if (imageIsHStrip(image))
         {
