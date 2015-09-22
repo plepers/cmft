@@ -883,7 +883,9 @@ int cmftMain(int _argc, char const* const* _argv)
     // Load image.
     if (0 != strcmp("", inputParameters.m_inputFilePath))
     {
-       imageLoaded = imageLoad(image, inputParameters.m_inputFilePath, TextureFormat::RGBA32F);
+       imageLoaded = imageLoad   (image, inputParameters.m_inputFilePath, TextureFormat::RGBA32F)
+                  || imageLoadStb(image, inputParameters.m_inputFilePath, TextureFormat::RGBA32F)
+                   ;
     }
     else
     {
@@ -929,16 +931,16 @@ int cmftMain(int _argc, char const* const* _argv)
             INFO("Converting cube cross to cubemap.");
             imageCubemapFromCross(image);
         }
-//        else if (imageIsLatLong(image))
-//        {
-//            INFO("Converting latlong image to cubemap.");
-//            imageCubemapFromLatLong(image);
-//        }
-        else if (imageIsOctantSplit(image))
+        else if (imageIsLatLong(image))
         {
-            INFO("Converting oct split image to cubemap.");
-            imageCubemapFromOctSplit(image);
+            INFO("Converting latlong image to cubemap.");
+            imageCubemapFromLatLong(image);
         }
+//        else if (imageIsOctantSplit(image))
+//        {
+//            INFO("Converting oct split image to cubemap.");
+//            imageCubemapFromOctSplit(image);
+//        }
         else if (imageIsHStrip(image))
         {
             INFO("Converting hstrip image to cubemap.");
