@@ -550,62 +550,62 @@ void outputShCoeffs(const char* _pathName, double _shCoeffs[SH_COEFF_NUM][3])
         strcpy(baseName, "cmft");
     }
     baseName[0] = (char)toupper(baseName[0]);
-
+    
     char baseNameUpper[128];
     dm::strtoupper(baseNameUpper, baseName);
-
+    
     // File content.
     char content[10240];
     sprintf(content,
-           "#ifndef CMFT_%s_H_HEADER_GUARD\n"
-           "#define CMFT_%s_H_HEADER_GUARD\n"
-           "\n"
-           "static const double s_shCoeffs%s[25][3] =\n"
-           "{\n"
-           "    /* Band 0 */ { %21.18f, %21.18f, %21.18f },\n"
-           "    /* Band 1 */ { %21.18f, %21.18f, %21.18f }, { %21.18f, %21.18f, %21.18f }, { %21.18f, %21.18f, %21.18f },\n"
-           "    /* Band 2 */ { %21.18f, %21.18f, %21.18f }, { %21.18f, %21.18f, %21.18f }, { %21.18f, %21.18f, %21.18f }, { %21.18f, %21.18f, %21.18f }, { %21.18f, %21.18f, %21.18f },\n"
-           "    /* Band 3 */ { %21.18f, %21.18f, %21.18f }, { %21.18f, %21.18f, %21.18f }, { %21.18f, %21.18f, %21.18f }, { %21.18f, %21.18f, %21.18f }, { %21.18f, %21.18f, %21.18f }, { %21.18f, %21.18f, %21.18f }, { %21.18f, %21.18f, %21.18f },\n"
-           "    /* Band 4 */ { %21.18f, %21.18f, %21.18f }, { %21.18f, %21.18f, %21.18f }, { %21.18f, %21.18f, %21.18f }, { %21.18f, %21.18f, %21.18f }, { %21.18f, %21.18f, %21.18f }, { %21.18f, %21.18f, %21.18f }, { %21.18f, %21.18f, %21.18f }, { %21.18f, %21.18f, %21.18f }, { %21.18f, %21.18f, %21.18f }\n"
-           "};\n"
-           "\n"
-           "#endif // CMFT_%s_H_HEADER_GUARD\n"
-           , baseNameUpper
-           , baseNameUpper
-           , baseName
-           , _shCoeffs[ 0][0], _shCoeffs[ 0][1], _shCoeffs[ 0][2]
-           , _shCoeffs[ 1][0], _shCoeffs[ 1][1], _shCoeffs[ 1][2]
-           , _shCoeffs[ 2][0], _shCoeffs[ 2][1], _shCoeffs[ 2][2]
-           , _shCoeffs[ 3][0], _shCoeffs[ 3][1], _shCoeffs[ 3][2]
-           , _shCoeffs[ 4][0], _shCoeffs[ 4][1], _shCoeffs[ 4][2]
-           , _shCoeffs[ 5][0], _shCoeffs[ 5][1], _shCoeffs[ 5][2]
-           , _shCoeffs[ 6][0], _shCoeffs[ 6][1], _shCoeffs[ 6][2]
-           , _shCoeffs[ 7][0], _shCoeffs[ 7][1], _shCoeffs[ 7][2]
-           , _shCoeffs[ 8][0], _shCoeffs[ 8][1], _shCoeffs[ 8][2]
-           , _shCoeffs[ 9][0], _shCoeffs[ 9][1], _shCoeffs[ 9][2]
-           , _shCoeffs[10][0], _shCoeffs[10][1], _shCoeffs[10][2]
-           , _shCoeffs[11][0], _shCoeffs[11][1], _shCoeffs[11][2]
-           , _shCoeffs[12][0], _shCoeffs[12][1], _shCoeffs[12][2]
-           , _shCoeffs[13][0], _shCoeffs[13][1], _shCoeffs[13][2]
-           , _shCoeffs[14][0], _shCoeffs[14][1], _shCoeffs[14][2]
-           , _shCoeffs[15][0], _shCoeffs[15][1], _shCoeffs[15][2]
-           , _shCoeffs[16][0], _shCoeffs[16][1], _shCoeffs[16][2]
-           , _shCoeffs[17][0], _shCoeffs[17][1], _shCoeffs[17][2]
-           , _shCoeffs[18][0], _shCoeffs[18][1], _shCoeffs[18][2]
-           , _shCoeffs[19][0], _shCoeffs[19][1], _shCoeffs[19][2]
-           , _shCoeffs[20][0], _shCoeffs[20][1], _shCoeffs[20][2]
-           , _shCoeffs[21][0], _shCoeffs[21][1], _shCoeffs[21][2]
-           , _shCoeffs[22][0], _shCoeffs[22][1], _shCoeffs[22][2]
-           , _shCoeffs[23][0], _shCoeffs[23][1], _shCoeffs[23][2]
-           , _shCoeffs[24][0], _shCoeffs[24][1], _shCoeffs[24][2]
-           , baseNameUpper
-           );
-
+            "#ifndef CMFT_%s_H_HEADER_GUARD\n"
+            "#define CMFT_%s_H_HEADER_GUARD\n"
+            "\n"
+            "static const double s_shCoeffs%s[25][3] =\n"
+            "{\n"
+            "    /* Band 0 */ { %21.18f, %21.18f, %21.18f },\n"
+            "    /* Band 1 */ { %21.18f, %21.18f, %21.18f }, { %21.18f, %21.18f, %21.18f }, { %21.18f, %21.18f, %21.18f },\n"
+            "    /* Band 2 */ { %21.18f, %21.18f, %21.18f }, { %21.18f, %21.18f, %21.18f }, { %21.18f, %21.18f, %21.18f }, { %21.18f, %21.18f, %21.18f }, { %21.18f, %21.18f, %21.18f },\n"
+            "    /* Band 3 */ { %21.18f, %21.18f, %21.18f }, { %21.18f, %21.18f, %21.18f }, { %21.18f, %21.18f, %21.18f }, { %21.18f, %21.18f, %21.18f }, { %21.18f, %21.18f, %21.18f }, { %21.18f, %21.18f, %21.18f }, { %21.18f, %21.18f, %21.18f },\n"
+            "    /* Band 4 */ { %21.18f, %21.18f, %21.18f }, { %21.18f, %21.18f, %21.18f }, { %21.18f, %21.18f, %21.18f }, { %21.18f, %21.18f, %21.18f }, { %21.18f, %21.18f, %21.18f }, { %21.18f, %21.18f, %21.18f }, { %21.18f, %21.18f, %21.18f }, { %21.18f, %21.18f, %21.18f }, { %21.18f, %21.18f, %21.18f }\n"
+            "};\n"
+            "\n"
+            "#endif // CMFT_%s_H_HEADER_GUARD\n"
+            , baseNameUpper
+            , baseNameUpper
+            , baseName
+            , _shCoeffs[ 0][0], _shCoeffs[ 0][1], _shCoeffs[ 0][2]
+            , _shCoeffs[ 1][0], _shCoeffs[ 1][1], _shCoeffs[ 1][2]
+            , _shCoeffs[ 2][0], _shCoeffs[ 2][1], _shCoeffs[ 2][2]
+            , _shCoeffs[ 3][0], _shCoeffs[ 3][1], _shCoeffs[ 3][2]
+            , _shCoeffs[ 4][0], _shCoeffs[ 4][1], _shCoeffs[ 4][2]
+            , _shCoeffs[ 5][0], _shCoeffs[ 5][1], _shCoeffs[ 5][2]
+            , _shCoeffs[ 6][0], _shCoeffs[ 6][1], _shCoeffs[ 6][2]
+            , _shCoeffs[ 7][0], _shCoeffs[ 7][1], _shCoeffs[ 7][2]
+            , _shCoeffs[ 8][0], _shCoeffs[ 8][1], _shCoeffs[ 8][2]
+            , _shCoeffs[ 9][0], _shCoeffs[ 9][1], _shCoeffs[ 9][2]
+            , _shCoeffs[10][0], _shCoeffs[10][1], _shCoeffs[10][2]
+            , _shCoeffs[11][0], _shCoeffs[11][1], _shCoeffs[11][2]
+            , _shCoeffs[12][0], _shCoeffs[12][1], _shCoeffs[12][2]
+            , _shCoeffs[13][0], _shCoeffs[13][1], _shCoeffs[13][2]
+            , _shCoeffs[14][0], _shCoeffs[14][1], _shCoeffs[14][2]
+            , _shCoeffs[15][0], _shCoeffs[15][1], _shCoeffs[15][2]
+            , _shCoeffs[16][0], _shCoeffs[16][1], _shCoeffs[16][2]
+            , _shCoeffs[17][0], _shCoeffs[17][1], _shCoeffs[17][2]
+            , _shCoeffs[18][0], _shCoeffs[18][1], _shCoeffs[18][2]
+            , _shCoeffs[19][0], _shCoeffs[19][1], _shCoeffs[19][2]
+            , _shCoeffs[20][0], _shCoeffs[20][1], _shCoeffs[20][2]
+            , _shCoeffs[21][0], _shCoeffs[21][1], _shCoeffs[21][2]
+            , _shCoeffs[22][0], _shCoeffs[22][1], _shCoeffs[22][2]
+            , _shCoeffs[23][0], _shCoeffs[23][1], _shCoeffs[23][2]
+            , _shCoeffs[24][0], _shCoeffs[24][1], _shCoeffs[24][2]
+            , baseNameUpper
+            );
+    
     // Append *.c extension.
     char filePath[DM_PATH_LEN];
     strcpy(filePath, _pathName);
     strcat(filePath, ".c");
-
+    
     // Open file.
     FILE* fp = fopen(filePath, "wb");
     if (NULL == fp)
@@ -614,7 +614,85 @@ void outputShCoeffs(const char* _pathName, double _shCoeffs[SH_COEFF_NUM][3])
         return;
     }
     dm::ScopeFclose cleanup(fp);
+    
+    // Write content.
+    CMFT_UNUSED size_t write;
+    write = fwrite(&content, strlen(content), 1, fp);
+    DEBUG_CHECK(write == 1, "Error writing sh coeffs file content.");
+    FERROR_CHECK(fp);
+}
 
+
+
+/// Outputs C file.
+void outputShCoeffsJS(const char* _pathName, double _shCoeffs[SH_COEFF_NUM][3])
+{
+    // Get base name.
+    char baseName[128];
+    if (!dm::basename(baseName, 128, _pathName))
+    {
+        strcpy(baseName, "cmft");
+    }
+    baseName[0] = (char)toupper(baseName[0]);
+    
+    
+    // File content.
+    char content[10240];
+    sprintf(content,
+            "\n"
+            "// %s \n"
+            "var coeffs = \n"
+            "[\n"
+            "    /* Band 0 */ %21.18f, %21.18f, %21.18f ,\n"
+            "    /* Band 1 */ %21.18f, %21.18f, %21.18f ,  %21.18f, %21.18f, %21.18f, %21.18f, %21.18f, %21.18f,\n"
+            "    /* Band 2 */  %21.18f, %21.18f, %21.18f ,  %21.18f, %21.18f, %21.18f ,  %21.18f, %21.18f, %21.18f ,  %21.18f, %21.18f, %21.18f ,  %21.18f, %21.18f, %21.18f ,\n"
+            "    /* Band 3 */  %21.18f, %21.18f, %21.18f ,  %21.18f, %21.18f, %21.18f ,  %21.18f, %21.18f, %21.18f ,  %21.18f, %21.18f, %21.18f ,  %21.18f, %21.18f, %21.18f ,  %21.18f, %21.18f, %21.18f ,  %21.18f, %21.18f, %21.18f ,\n"
+            "    /* Band 4 */  %21.18f, %21.18f, %21.18f ,  %21.18f, %21.18f, %21.18f ,  %21.18f, %21.18f, %21.18f ,  %21.18f, %21.18f, %21.18f ,  %21.18f, %21.18f, %21.18f ,  %21.18f, %21.18f, %21.18f ,  %21.18f, %21.18f, %21.18f ,  %21.18f, %21.18f, %21.18f ,  %21.18f, %21.18f, %21.18f \n"
+            "];\n"
+            "\n"
+            "module.exports = coeffs;"
+            , baseName
+            , _shCoeffs[ 0][0], _shCoeffs[ 0][1], _shCoeffs[ 0][2]
+            , _shCoeffs[ 1][0], _shCoeffs[ 1][1], _shCoeffs[ 1][2]
+            , _shCoeffs[ 2][0], _shCoeffs[ 2][1], _shCoeffs[ 2][2]
+            , _shCoeffs[ 3][0], _shCoeffs[ 3][1], _shCoeffs[ 3][2]
+            , _shCoeffs[ 4][0], _shCoeffs[ 4][1], _shCoeffs[ 4][2]
+            , _shCoeffs[ 5][0], _shCoeffs[ 5][1], _shCoeffs[ 5][2]
+            , _shCoeffs[ 6][0], _shCoeffs[ 6][1], _shCoeffs[ 6][2]
+            , _shCoeffs[ 7][0], _shCoeffs[ 7][1], _shCoeffs[ 7][2]
+            , _shCoeffs[ 8][0], _shCoeffs[ 8][1], _shCoeffs[ 8][2]
+            , _shCoeffs[ 9][0], _shCoeffs[ 9][1], _shCoeffs[ 9][2]
+            , _shCoeffs[10][0], _shCoeffs[10][1], _shCoeffs[10][2]
+            , _shCoeffs[11][0], _shCoeffs[11][1], _shCoeffs[11][2]
+            , _shCoeffs[12][0], _shCoeffs[12][1], _shCoeffs[12][2]
+            , _shCoeffs[13][0], _shCoeffs[13][1], _shCoeffs[13][2]
+            , _shCoeffs[14][0], _shCoeffs[14][1], _shCoeffs[14][2]
+            , _shCoeffs[15][0], _shCoeffs[15][1], _shCoeffs[15][2]
+            , _shCoeffs[16][0], _shCoeffs[16][1], _shCoeffs[16][2]
+            , _shCoeffs[17][0], _shCoeffs[17][1], _shCoeffs[17][2]
+            , _shCoeffs[18][0], _shCoeffs[18][1], _shCoeffs[18][2]
+            , _shCoeffs[19][0], _shCoeffs[19][1], _shCoeffs[19][2]
+            , _shCoeffs[20][0], _shCoeffs[20][1], _shCoeffs[20][2]
+            , _shCoeffs[21][0], _shCoeffs[21][1], _shCoeffs[21][2]
+            , _shCoeffs[22][0], _shCoeffs[22][1], _shCoeffs[22][2]
+            , _shCoeffs[23][0], _shCoeffs[23][1], _shCoeffs[23][2]
+            , _shCoeffs[24][0], _shCoeffs[24][1], _shCoeffs[24][2]
+            );
+    
+    // Append *.c extension.
+    char filePath[DM_PATH_LEN];
+    strcpy(filePath, _pathName);
+    strcat(filePath, ".js");
+    
+    // Open file.
+    FILE* fp = fopen(filePath, "wb");
+    if (NULL == fp)
+    {
+        WARN("Could not open file %s for writing.", filePath);
+        return;
+    }
+    dm::ScopeFclose cleanup(fp);
+    
     // Write content.
     CMFT_UNUSED size_t write;
     write = fwrite(&content, strlen(content), 1, fp);
@@ -1047,7 +1125,7 @@ int cmftMain(int _argc, char const* const* _argv)
         {
             const char* fileName = inputParameters.m_outputFiles[ii].m_fileName;
             INFO("Saving spherical harmonics coefficients to %s.c", fileName);
-            outputShCoeffs(fileName, shCoeffs);
+            outputShCoeffsJS(fileName, shCoeffs);
         }
 
         INFO("Done.");
