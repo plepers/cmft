@@ -7,7 +7,6 @@
 #include <cmft/allocator.h>
 
 #include "base/config.h"
-#include "base/printcallback.h"
 #include "base/macros.h"
 #include "base/stb_image.h"
 #include "cubemaputils.h"
@@ -39,6 +38,7 @@ namespace cmft
         "RGBA16",  //RGBA16
         "RGBA16F", //RGBA16F
         "RGBA32F", //RGBA32F
+        "RGBM",    //RGBM
     };
 
     const char* getTextureFormatStr(TextureFormat::Enum _format)
@@ -273,6 +273,7 @@ namespace cmft
         TextureFormat::RGBA16,
         TextureFormat::RGBA16F,
         TextureFormat::RGBA32F,
+        TextureFormat::RGBM,
         TextureFormat::Null,
     };
 
@@ -293,6 +294,7 @@ namespace cmft
     {
         TextureFormat::BGR8,
         TextureFormat::BGRA8,
+        TextureFormat::RGBM,
         TextureFormat::Null,
     };
 
@@ -1986,7 +1988,7 @@ namespace cmft
         else if (imageIsCubeCross(_image, true))
         {
             const float aspect = float(int32_t(_image.m_width))/float(int32_t(_image.m_height));
-            const bool isVertical = (aspect - 3.0f/4.0f) < 0.0001f;
+            const bool isVertical = dm::equals(aspect, 3.0f/4.0f, 0.0001f);
             if (isVertical)
             {
                 _width  = _faceSize*3;
@@ -2042,7 +2044,7 @@ namespace cmft
         else if (imageIsCubeCross(_image, true))
         {
             const float aspect = float(int32_t(_image.m_width))/float(int32_t(_image.m_height));
-            const bool isVertical = (aspect - 3.0f/4.0f) < 0.0001f;
+            const bool isVertical = dm::equals(aspect, 3.0f/4.0f, 0.0001f);
             if (isVertical)
             {
                 return _image.m_height>>2;
@@ -2377,6 +2379,65 @@ namespace cmft
         imageUnload(imageRgba32f, _allocator);
     }
 
+
+    // From: http://chilliant.blogspot.pt/2012/08/srgb-approximations-for-hlsl.html
+    float ToSRGBApprox(float v)
+    {
+        float S1 = sqrtf( v );
+        float S2 = sqrtf( S1 );
+        float S3 = sqrtf( S2 );
+        float sRGB = 0.585122381f * S1 + 0.783140355f * S2 - 0.368262736f * S3;
+        return sRGB;
+    }
+
+    void imageEncodeRGBM( Image& _image, bx::AllocatorI* _allocator )
+    {
+        // Operation is done in rgba32f format.
+        ImageHardRef imageRgba32f;
+        imageRefOrConvert( imageRgba32f, TextureFormat::RGBA32F, _image, _allocator );
+
+        // Iterate through image channels and apply gamma function.
+        float* channel = (float*)imageRgba32f.m_data;
+        const float* end = (const float*)((const uint8_t*)imageRgba32f.m_data + imageRgba32f.m_dataSize);
+
+        float rgbm[4];
+        for (; channel < end; channel += 4)
+        {
+            // convert to gamma space before encoding
+            channel[0] = ToSRGBApprox(channel[0]);
+            channel[1] = ToSRGBApprox(channel[1]);
+            channel[2] = ToSRGBApprox(channel[2]);
+            channel[3] = ToSRGBApprox(channel[3]);
+
+            memcpy( rgbm, channel, 4*sizeof(float) );
+
+            rgbm[0] /= 6.0f;
+            rgbm[1] /= 6.0f;
+            rgbm[2] /= 6.0f;
+
+            float m = fsaturate(fmaxf(fmaxf(rgbm[0], rgbm[1]), fmaxf(rgbm[2], 1e-6f)));
+            m = ceil(rgbm[3] * 255.0f) / 255.0f;
+            rgbm[0] /= m;
+            rgbm[1] /= m;
+            rgbm[2] /= m;
+            rgbm[3] = m;
+
+            channel[0] = rgbm[0];
+            channel[1] = rgbm[1];
+            channel[2] = rgbm[2];
+            channel[3] = rgbm[3];
+        }
+
+        // Convert to BGRA8 format as final. Overrides any format the user asks
+        if (imageRgba32f.isCopy())
+        {
+            imageConvert( _image, TextureFormat::BGRA8, imageRgba32f, _allocator );
+        }
+
+        // Cleanup.
+        imageUnload(imageRgba32f, _allocator);
+    }
+
     void imageApplyGamma(Image& _image, float _gammaPow, bx::AllocatorI* _allocator)
     {
         // Do nothing if _gammaPow is ~= 1.0f.
@@ -2527,8 +2588,8 @@ namespace cmft
 
         // Check aspect.
         const float aspect = (float)(int32_t)_image.m_width/(float)(int32_t)_image.m_height;
-        const bool isVertical   = (aspect - 3.0f/4.0f) < 0.0001f;
-        const bool isHorizontal = (aspect - 4.0f/3.0f) < 0.0001f;
+        const bool isVertical   = dm::equals(aspect, 3.0f/4.0f, 0.0001f);
+        const bool isHorizontal = dm::equals(aspect, 4.0f/3.0f, 0.0001f);
 
         if (!isVertical && !isHorizontal)
         {
@@ -2707,8 +2768,8 @@ namespace cmft
     {
         // Checking image aspect.
         const float aspect = (float)(int32_t)_src.m_width/(float)(int32_t)_src.m_height;
-        const bool isVertical   = (aspect - 3.0f/4.0f) < 0.0001f;
-        const bool isHorizontal = (aspect - 4.0f/3.0f) < 0.0001f;
+        const bool isVertical   = dm::equals(aspect, 3.0f/4.0f, 0.0001f);
+        const bool isHorizontal = dm::equals(aspect, 4.0f/3.0f, 0.0001f);
 
         if (!isVertical && !isHorizontal)
         {
@@ -5331,98 +5392,128 @@ namespace cmft
     bool imageSaveHdr(const char* _fileName, const Image& _image, bx::AllocatorI* _allocator)
     {
         char fileName[DM_PATH_LEN];
+        char mipName[DM_PATH_LEN];
+
         strcpy(fileName, _fileName);
-        bx::strlcat(fileName, getFilenameExtensionStr(ImageFileType::HDR), DM_PATH_LEN);
 
-        // Open file.
-        FILE* fp = fopen(fileName, "wb");
-        if (NULL == fp)
+        const uint32_t bytesPerPixel = getImageDataInfo(_image.m_format).m_bytesPerPixel;
+
+        for (uint8_t mip = 0, endMip = _image.m_numMips; mip < endMip; ++mip)
         {
-            WARN("Could not open file %s for writing.", fileName);
-            return false;
+            dm::strscpya(mipName, fileName);
+
+            const uint32_t mipWidth  = dm::max(UINT32_C(1), _image.m_width  >> mip);
+            const uint32_t mipHeight = dm::max(UINT32_C(1), _image.m_height >> mip);
+
+            if (_image.m_numMips != 1)
+            {
+                char mipStr[8];
+                bx::snprintf(mipStr, sizeof(mipStr), "%d", mip);
+
+                char mipWidthStr[8];
+                bx::snprintf(mipWidthStr, sizeof(mipWidthStr), "%d", mipWidth);
+
+                char mipHeightStr[8];
+                bx::snprintf(mipHeightStr, sizeof(mipHeightStr), "%d", mipHeight);
+
+                bx::strlcat(mipName, "_",          DM_PATH_LEN);
+                bx::strlcat(mipName, mipStr,       DM_PATH_LEN);
+                bx::strlcat(mipName, "_",          DM_PATH_LEN);
+                bx::strlcat(mipName, mipWidthStr,  DM_PATH_LEN);
+                bx::strlcat(mipName, "x",          DM_PATH_LEN);
+                bx::strlcat(mipName, mipHeightStr, DM_PATH_LEN);
+            }
+
+            bx::strlcat(mipName, getFilenameExtensionStr(ImageFileType::HDR), DM_PATH_LEN);
+
+            // Open file.
+            FILE* fp = fopen(mipName, "wb");
+            if (NULL == fp)
+            {
+                WARN("Could not open file %s for writing.", mipName);
+                return false;
+            }
+            dm::ScopeFclose cleanup(fp);
+
+            // Hdr file type assumes rgbe image format.
+            ImageSoftRef imageRgbe;
+            imageRefOrConvert(imageRgbe, TextureFormat::RGBE, _image, _allocator);
+
+            // Get image offsets.
+            uint32_t imageOffsets[CUBE_FACE_NUM][MAX_MIP_NUM];
+            imageGetMipOffsets(imageOffsets, _image);
+            const uint8_t* mipData = (const uint8_t*)imageRgbe.m_data + imageOffsets[0][mip];
+
+            if (1 != imageRgbe.m_numFaces)
+            {
+                WARN("Image seems to be containing more than one face. "
+                     "Only the first one will be saved due to the limits of HDR format."
+                    );
+            }
+
+            HdrHeader hdrHeader;
+            hdrHeaderFromImage(hdrHeader, imageRgbe);
+
+            CMFT_UNUSED size_t write = 0;
+
+            // Write magic.
+            char magic[HDR_MAGIC_LEN+1] = HDR_MAGIC_FULL;
+            magic[HDR_MAGIC_LEN] = '\n';
+            write = fwrite(&magic, HDR_MAGIC_LEN+1, 1, fp);
+            DEBUG_CHECK(write == 1, "Error writing Hdr magic.");
+            FERROR_CHECK(fp);
+
+            // Write comment.
+            char comment[21] = "# Output from cmft.\n";
+            write = fwrite(&comment, 20, 1, fp);
+            DEBUG_CHECK(write == 1, "Error writing Hdr comment.");
+            FERROR_CHECK(fp);
+
+            // Write format.
+            const char format[24] = "FORMAT=32-bit_rle_rgbe\n";
+            write = fwrite(&format, 23, 1, fp);
+            DEBUG_CHECK(write == 1, "Error writing Hdr format.");
+            FERROR_CHECK(fp);
+
+            // Don't write gamma for now...
+            //char gamma[32];
+            //sprintf(gamma, "GAMMA=%g\n", hdrHeader.m_gamma);
+            //const size_t gammaLen = strlen(gamma);
+            //write = fwrite(&gamma, gammaLen, 1, fp);
+            //DEBUG_CHECK(write == 1, "Error writing Hdr gamma.");
+            //FERROR_CHECK(fp);
+
+            // Write exposure.
+            char exposure[32];
+            sprintf(exposure, "EXPOSURE=%g\n", hdrHeader.m_exposure);
+            const size_t exposureLen = strlen(exposure);
+            write = fwrite(&exposure, exposureLen, 1, fp);
+            DEBUG_CHECK(write == 1, "Error writing Hdr exposure.");
+            FERROR_CHECK(fp);
+
+            // Write header terminator.
+            char headerTerminator = '\n';
+            write = fwrite(&headerTerminator, 1, 1, fp);
+            DEBUG_CHECK(write == 1, "Error writing Hdr header terminator.");
+            FERROR_CHECK(fp);
+
+            // Write image size.
+            char imageSize[32];
+            sprintf(imageSize, "-Y %d +X %d\n", mipHeight, mipWidth);
+            const size_t imageSizeLen = strlen(imageSize);
+            write = fwrite(&imageSize, imageSizeLen, 1, fp);
+            DEBUG_CHECK(write == 1, "Error writing Hdr image size.");
+            FERROR_CHECK(fp);
+
+            // Write data.
+            DEBUG_CHECK(NULL != imageRgbe.m_data, "Image data is null.");
+            write = fwrite(mipData, bytesPerPixel * mipWidth * mipHeight, 1, fp);
+            DEBUG_CHECK(write == 1, "Error writing Hdr data.");
+            FERROR_CHECK(fp);
+
+            // Cleanup.
+            imageUnload(imageRgbe, _allocator);
         }
-        dm::ScopeFclose cleanup(fp);
-
-        // Hdr file type assumes rgbe image format.
-        ImageSoftRef imageRgbe;
-        imageRefOrConvert(imageRgbe, TextureFormat::RGBE, _image, _allocator);
-
-        if (1 != imageRgbe.m_numFaces)
-        {
-            WARN("Image seems to be containing more than one face. "
-                 "Only the first one will be saved due to the limits of HDR format."
-                );
-        }
-
-        if (1 != imageRgbe.m_numMips)
-        {
-            WARN("Image seems to be containing more than one mip map. "
-                 "Only the first one will be saved due to the limits of HDR format."
-                );
-        }
-
-        HdrHeader hdrHeader;
-        hdrHeaderFromImage(hdrHeader, imageRgbe);
-
-        CMFT_UNUSED size_t write = 0;
-
-        // Write magic.
-        char magic[HDR_MAGIC_LEN+1] = HDR_MAGIC_FULL;
-        magic[HDR_MAGIC_LEN] = '\n';
-        write = fwrite(&magic, HDR_MAGIC_LEN+1, 1, fp);
-        DEBUG_CHECK(write == 1, "Error writing Hdr magic.");
-        FERROR_CHECK(fp);
-
-        // Write comment.
-        char comment[21] = "# Output from cmft.\n";
-        write = fwrite(&comment, 20, 1, fp);
-        DEBUG_CHECK(write == 1, "Error writing Hdr comment.");
-        FERROR_CHECK(fp);
-
-        // Write format.
-        const char format[24] = "FORMAT=32-bit_rle_rgbe\n";
-        write = fwrite(&format, 23, 1, fp);
-        DEBUG_CHECK(write == 1, "Error writing Hdr format.");
-        FERROR_CHECK(fp);
-
-        // Don't write gamma for now...
-        //char gamma[32];
-        //sprintf(gamma, "GAMMA=%g\n", hdrHeader.m_gamma);
-        //const size_t gammaLen = strlen(gamma);
-        //write = fwrite(&gamma, gammaLen, 1, fp);
-        //DEBUG_CHECK(write == 1, "Error writing Hdr gamma.");
-        //FERROR_CHECK(fp);
-
-        // Write exposure.
-        char exposure[32];
-        sprintf(exposure, "EXPOSURE=%g\n", hdrHeader.m_exposure);
-        const size_t exposureLen = strlen(exposure);
-        write = fwrite(&exposure, exposureLen, 1, fp);
-        DEBUG_CHECK(write == 1, "Error writing Hdr exposure.");
-        FERROR_CHECK(fp);
-
-        // Write header terminator.
-        char headerTerminator = '\n';
-        write = fwrite(&headerTerminator, 1, 1, fp);
-        DEBUG_CHECK(write == 1, "Error writing Hdr header terminator.");
-        FERROR_CHECK(fp);
-
-        // Write image size.
-        char imageSize[32];
-        sprintf(imageSize, "-Y %d +X %d\n", imageRgbe.m_height, imageRgbe.m_width);
-        const size_t imageSizeLen = strlen(imageSize);
-        write = fwrite(&imageSize, imageSizeLen, 1, fp);
-        DEBUG_CHECK(write == 1, "Error writing Hdr image size.");
-        FERROR_CHECK(fp);
-
-        // Write data. //TODO: implement RLE option.
-        DEBUG_CHECK(NULL != imageRgbe.m_data, "Image data is null.");
-        write = fwrite(imageRgbe.m_data, imageRgbe.m_dataSize, 1, fp);
-        DEBUG_CHECK(write == 1, "Error writing Hdr data.");
-        FERROR_CHECK(fp);
-
-        // Cleanup.
-        imageUnload(imageRgbe, _allocator);
 
         return true;
     }

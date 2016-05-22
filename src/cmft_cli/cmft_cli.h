@@ -7,7 +7,7 @@
 #define CMFT_CMFT_CLI_H_HEADER_GUARD
 
 #include <base/config.h>        // INFO, WARN
-#include <base/printcallback.h> // _INFO, _WARN, g_printInfo, g_printWarnings
+#include <base/macros.h>        // CMFT_UNUSED
 
 #include <stdio.h>
 #include <stdint.h>
@@ -18,6 +18,7 @@
 #include <cmft/image.h>
 #include <cmft/cubemapfilter.h>
 #include <cmft/clcontext.h>
+#include <cmft/print.h>         // setWarningPrintf(), setInfoPrintf()
 
 using namespace cmft;
 
@@ -107,6 +108,7 @@ static const CliOptionMap s_validTextureFormats[] =
     { "rgba16",  TextureFormat::RGBA16  },
     { "rgba16f", TextureFormat::RGBA16F },
     { "rgba32f", TextureFormat::RGBA32F },
+    { "rgbm",    TextureFormat::RGBM    },
     CLI_OPTION_MAP_TERMINATOR,
 };
 
@@ -232,6 +234,9 @@ struct InputParameters
 
     // Misc.
     bool m_silent;
+
+    // Encode
+    bool m_encodeRGBM;
 };
 
 void inputParametersFromCommandLine(InputParameters& _inputParameters, const bx::CommandLine& _cmdLine)
@@ -339,6 +344,9 @@ void inputParametersFromCommandLine(InputParameters& _inputParameters, const bx:
 
     // Misc.
     _inputParameters.m_silent = _cmdLine.hasArg("silent");
+
+    // Encode
+    _inputParameters.m_encodeRGBM = _cmdLine.hasArg("rgbm");
 
     // Output.
     uint32_t outputCount = 0;
@@ -538,6 +546,7 @@ void inputParametersDefault(InputParameters& _inputParameters)
 
     // Misc.
     _inputParameters.m_silent = false;
+    _inputParameters.m_encodeRGBM = false;
 }
 
 /// Outputs C file.
@@ -557,50 +566,50 @@ void outputShCoeffs(const char* _pathName, double _shCoeffs[SH_COEFF_NUM][3])
     // File content.
     char content[10240];
     sprintf(content,
-            "#ifndef CMFT_%s_H_HEADER_GUARD\n"
-            "#define CMFT_%s_H_HEADER_GUARD\n"
-            "\n"
-            "static const double s_shCoeffs%s[25][3] =\n"
-            "{\n"
-            "    /* Band 0 */ { %21.18f, %21.18f, %21.18f },\n"
-            "    /* Band 1 */ { %21.18f, %21.18f, %21.18f }, { %21.18f, %21.18f, %21.18f }, { %21.18f, %21.18f, %21.18f },\n"
-            "    /* Band 2 */ { %21.18f, %21.18f, %21.18f }, { %21.18f, %21.18f, %21.18f }, { %21.18f, %21.18f, %21.18f }, { %21.18f, %21.18f, %21.18f }, { %21.18f, %21.18f, %21.18f },\n"
-            "    /* Band 3 */ { %21.18f, %21.18f, %21.18f }, { %21.18f, %21.18f, %21.18f }, { %21.18f, %21.18f, %21.18f }, { %21.18f, %21.18f, %21.18f }, { %21.18f, %21.18f, %21.18f }, { %21.18f, %21.18f, %21.18f }, { %21.18f, %21.18f, %21.18f },\n"
-            "    /* Band 4 */ { %21.18f, %21.18f, %21.18f }, { %21.18f, %21.18f, %21.18f }, { %21.18f, %21.18f, %21.18f }, { %21.18f, %21.18f, %21.18f }, { %21.18f, %21.18f, %21.18f }, { %21.18f, %21.18f, %21.18f }, { %21.18f, %21.18f, %21.18f }, { %21.18f, %21.18f, %21.18f }, { %21.18f, %21.18f, %21.18f }\n"
-            "};\n"
-            "\n"
-            "#endif // CMFT_%s_H_HEADER_GUARD\n"
-            , baseNameUpper
-            , baseNameUpper
-            , baseName
-            , _shCoeffs[ 0][0], _shCoeffs[ 0][1], _shCoeffs[ 0][2]
-            , _shCoeffs[ 1][0], _shCoeffs[ 1][1], _shCoeffs[ 1][2]
-            , _shCoeffs[ 2][0], _shCoeffs[ 2][1], _shCoeffs[ 2][2]
-            , _shCoeffs[ 3][0], _shCoeffs[ 3][1], _shCoeffs[ 3][2]
-            , _shCoeffs[ 4][0], _shCoeffs[ 4][1], _shCoeffs[ 4][2]
-            , _shCoeffs[ 5][0], _shCoeffs[ 5][1], _shCoeffs[ 5][2]
-            , _shCoeffs[ 6][0], _shCoeffs[ 6][1], _shCoeffs[ 6][2]
-            , _shCoeffs[ 7][0], _shCoeffs[ 7][1], _shCoeffs[ 7][2]
-            , _shCoeffs[ 8][0], _shCoeffs[ 8][1], _shCoeffs[ 8][2]
-            , _shCoeffs[ 9][0], _shCoeffs[ 9][1], _shCoeffs[ 9][2]
-            , _shCoeffs[10][0], _shCoeffs[10][1], _shCoeffs[10][2]
-            , _shCoeffs[11][0], _shCoeffs[11][1], _shCoeffs[11][2]
-            , _shCoeffs[12][0], _shCoeffs[12][1], _shCoeffs[12][2]
-            , _shCoeffs[13][0], _shCoeffs[13][1], _shCoeffs[13][2]
-            , _shCoeffs[14][0], _shCoeffs[14][1], _shCoeffs[14][2]
-            , _shCoeffs[15][0], _shCoeffs[15][1], _shCoeffs[15][2]
-            , _shCoeffs[16][0], _shCoeffs[16][1], _shCoeffs[16][2]
-            , _shCoeffs[17][0], _shCoeffs[17][1], _shCoeffs[17][2]
-            , _shCoeffs[18][0], _shCoeffs[18][1], _shCoeffs[18][2]
-            , _shCoeffs[19][0], _shCoeffs[19][1], _shCoeffs[19][2]
-            , _shCoeffs[20][0], _shCoeffs[20][1], _shCoeffs[20][2]
-            , _shCoeffs[21][0], _shCoeffs[21][1], _shCoeffs[21][2]
-            , _shCoeffs[22][0], _shCoeffs[22][1], _shCoeffs[22][2]
-            , _shCoeffs[23][0], _shCoeffs[23][1], _shCoeffs[23][2]
-            , _shCoeffs[24][0], _shCoeffs[24][1], _shCoeffs[24][2]
-            , baseNameUpper
-            );
-    
+           "#ifndef CMFT_%s_H_HEADER_GUARD\n"
+           "#define CMFT_%s_H_HEADER_GUARD\n"
+           "\n"
+           "static const float s_shCoeffs%s[25][3] =\n"
+           "{\n"
+           "    /* Band 0 */ { %21.18f, %21.18f, %21.18f },\n"
+           "    /* Band 1 */ { %21.18f, %21.18f, %21.18f }, { %21.18f, %21.18f, %21.18f }, { %21.18f, %21.18f, %21.18f },\n"
+           "    /* Band 2 */ { %21.18f, %21.18f, %21.18f }, { %21.18f, %21.18f, %21.18f }, { %21.18f, %21.18f, %21.18f }, { %21.18f, %21.18f, %21.18f }, { %21.18f, %21.18f, %21.18f },\n"
+           "    /* Band 3 */ { %21.18f, %21.18f, %21.18f }, { %21.18f, %21.18f, %21.18f }, { %21.18f, %21.18f, %21.18f }, { %21.18f, %21.18f, %21.18f }, { %21.18f, %21.18f, %21.18f }, { %21.18f, %21.18f, %21.18f }, { %21.18f, %21.18f, %21.18f },\n"
+           "    /* Band 4 */ { %21.18f, %21.18f, %21.18f }, { %21.18f, %21.18f, %21.18f }, { %21.18f, %21.18f, %21.18f }, { %21.18f, %21.18f, %21.18f }, { %21.18f, %21.18f, %21.18f }, { %21.18f, %21.18f, %21.18f }, { %21.18f, %21.18f, %21.18f }, { %21.18f, %21.18f, %21.18f }, { %21.18f, %21.18f, %21.18f }\n"
+           "};\n"
+           "\n"
+           "#endif // CMFT_%s_H_HEADER_GUARD\n"
+           , baseNameUpper
+           , baseNameUpper
+           , baseName
+           , _shCoeffs[ 0][0], _shCoeffs[ 0][1], _shCoeffs[ 0][2]
+           , _shCoeffs[ 1][0], _shCoeffs[ 1][1], _shCoeffs[ 1][2]
+           , _shCoeffs[ 2][0], _shCoeffs[ 2][1], _shCoeffs[ 2][2]
+           , _shCoeffs[ 3][0], _shCoeffs[ 3][1], _shCoeffs[ 3][2]
+           , _shCoeffs[ 4][0], _shCoeffs[ 4][1], _shCoeffs[ 4][2]
+           , _shCoeffs[ 5][0], _shCoeffs[ 5][1], _shCoeffs[ 5][2]
+           , _shCoeffs[ 6][0], _shCoeffs[ 6][1], _shCoeffs[ 6][2]
+           , _shCoeffs[ 7][0], _shCoeffs[ 7][1], _shCoeffs[ 7][2]
+           , _shCoeffs[ 8][0], _shCoeffs[ 8][1], _shCoeffs[ 8][2]
+           , _shCoeffs[ 9][0], _shCoeffs[ 9][1], _shCoeffs[ 9][2]
+           , _shCoeffs[10][0], _shCoeffs[10][1], _shCoeffs[10][2]
+           , _shCoeffs[11][0], _shCoeffs[11][1], _shCoeffs[11][2]
+           , _shCoeffs[12][0], _shCoeffs[12][1], _shCoeffs[12][2]
+           , _shCoeffs[13][0], _shCoeffs[13][1], _shCoeffs[13][2]
+           , _shCoeffs[14][0], _shCoeffs[14][1], _shCoeffs[14][2]
+           , _shCoeffs[15][0], _shCoeffs[15][1], _shCoeffs[15][2]
+           , _shCoeffs[16][0], _shCoeffs[16][1], _shCoeffs[16][2]
+           , _shCoeffs[17][0], _shCoeffs[17][1], _shCoeffs[17][2]
+           , _shCoeffs[18][0], _shCoeffs[18][1], _shCoeffs[18][2]
+           , _shCoeffs[19][0], _shCoeffs[19][1], _shCoeffs[19][2]
+           , _shCoeffs[20][0], _shCoeffs[20][1], _shCoeffs[20][2]
+           , _shCoeffs[21][0], _shCoeffs[21][1], _shCoeffs[21][2]
+           , _shCoeffs[22][0], _shCoeffs[22][1], _shCoeffs[22][2]
+           , _shCoeffs[23][0], _shCoeffs[23][1], _shCoeffs[23][2]
+           , _shCoeffs[24][0], _shCoeffs[24][1], _shCoeffs[24][2]
+           , baseNameUpper
+           );
+
     // Append *.c extension.
     char filePath[DM_PATH_LEN];
     strcpy(filePath, _pathName);
@@ -900,6 +909,7 @@ void printHelp()
             "          <tga_outputType> = [latlong,hcross,vcross,hstrip,vstrip,facelist,octant,octsplit]\n"
             "          <hdr_outputType> = [latlong,hcross,vcross,hstrip,vstrip,facelist,octant,octsplit]\n"
             "    --silent                           Do not print any output.\n"
+            "    --rgbm                             Encode image in RGBM.\n"
 
             "\n"
             "Command line parameters are case insenitive (except for file names and paths).\n"
@@ -949,8 +959,8 @@ int cmftMain(int _argc, char const* const* _argv)
 
     if (inputParameters.m_silent)
     {
-        g_printInfo = false;
-        g_printWarnings = false;
+        setWarningPrintf(NULL);
+        setInfoPrintf(NULL);
     }
 
     Image image;
@@ -1154,14 +1164,29 @@ int cmftMain(int _argc, char const* const* _argv)
     // Apply gamma on output image.
     imageApplyGamma(image, inputParameters.m_outputGammaPowNumerator / inputParameters.m_outputGammaPowDenominator);
 
+    // Encode RGBM (using --rgbm arg)
+    if (inputParameters.m_encodeRGBM)
+    {
+        INFO("Encoding RGBM");
+        imageEncodeRGBM(image);
+    }
+
     // Save output images.
     for (uint32_t outputIdx = 0; outputIdx < inputParameters.m_outputFilesNum; ++outputIdx)
     {
         const OutputFile& output = inputParameters.m_outputFiles[outputIdx];
 
-        const OutputType::Enum    ot = (   OutputType::Enum)output.m_outputType;
-        const TextureFormat::Enum tf = (TextureFormat::Enum)output.m_textureFormat;
-        const ImageFileType::Enum ft = (ImageFileType::Enum)output.m_fileType;
+        OutputType::Enum    ot = (   OutputType::Enum)output.m_outputType;
+        ImageFileType::Enum ft = (ImageFileType::Enum)output.m_fileType;
+        TextureFormat::Enum tf = (TextureFormat::Enum)output.m_textureFormat;
+
+        // Encode RGBM (using texture format)
+        if( tf == TextureFormat::RGBM )
+        {
+            INFO("Encoding RGBM");
+            imageEncodeRGBM(image);
+            tf = TextureFormat::BGRA8;	// Change file format to BGRA8 for saving
+        }
 
         imageSave(image, output.m_fileName, ft, ot, tf, true);
     }
