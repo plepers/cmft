@@ -296,7 +296,7 @@ namespace cmft
         _v = px - py;
         
         // Reflect the folds of the lower hemisphere over the diagonals.
-        if (_vec[1] <= 0.0f)
+        if (_vec[2] <= 0.0f)
         {
             _u = -_u;
         }
@@ -323,7 +323,7 @@ namespace cmft
         _vec[1] = ( sign * px - py ) / 2.0f;
         
         
-        _vec[2] = 1.0f - fabsf(_vec[1]) - fabsf(_vec[1]);
+        _vec[2] = 1.0f - fabsf(_vec[0]) - fabsf(_vec[1]);
         
         _vec[2] *= sign;
         
