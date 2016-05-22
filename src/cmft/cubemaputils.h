@@ -289,7 +289,7 @@ namespace cmft
         // Project the sphere onto the octahedron, and then onto the xy plane.
         float dot = fabsf(_vec[0]) + fabsf(_vec[1]) + fabsf(_vec[2]);
         float px = _vec[0] / dot;
-        float py = _vec[2] / dot;
+        float py = _vec[1] / dot;
         
         // rotate 45° and scale by 1/SQRT2/2
         _u = (px + py) - 1.0f;
@@ -320,12 +320,12 @@ namespace cmft
         
         
         _vec[0] = ( sign * px + py ) / 2.0f;
-        _vec[2] = ( sign * px - py ) / 2.0f;
+        _vec[1] = ( sign * px - py ) / 2.0f;
         
         
-        _vec[1] = 1.0f - fabsf(_vec[0]) - fabsf(_vec[2]);
+        _vec[2] = 1.0f - fabsf(_vec[1]) - fabsf(_vec[1]);
         
-        _vec[1] *= sign;
+        _vec[2] *= sign;
         
         
         const float invLen = 1.0f/vec3Length(_vec);
